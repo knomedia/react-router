@@ -1,14 +1,16 @@
-var ActiveStore = require('../stores/ActiveStore');
+var invariant = require('react/lib/invariant');
+var ActiveDelegate = require('./ActiveDelegate');
 
 /**
  * A mixin for components that need to know about the routes, params,
  * and query that are currently active. Components that use it get two
  * things:
  *
- *   1. An `isActive` static method they can use to check if a route,
- *      params, and query are active.
- *   2. An `updateActiveState` instance method that is called when the
+ *   1. An `updateActiveState` method that is called when the
  *      active state changes.
+ *   2. An `isActive` method they can use to check if a route,
+ *      params, and query are active.
+ *
  *
  * Example:
  *
@@ -24,7 +26,7 @@ var ActiveStore = require('../stores/ActiveStore');
  *   
  *     updateActiveState: function () {
  *       this.setState({
- *         isActive: Tab.isActive(routeName, params, query)
+ *         isActive: this.isActive(routeName, params, query)
  *       })
  *     }
  *   
@@ -32,27 +34,40 @@ var ActiveStore = require('../stores/ActiveStore');
  */
 var ActiveState = {
 
-  statics: {
+  /**
+   * Returns the component that serves as the active delegate for
+   * this component.
+   */
+  getActiveDelegate: function () {
+    var delegate = this._owner;
 
-    /**
-     * Returns true if the route with the given name, URL parameters, and query
-     * are all currently active.
-     */
-    isActive: ActiveStore.isActive
+    // with (evilGrin) { eval('mwuuaaahahahahaha!') }
+    while (delegate != null && typeof delegate.isActive !== 'function')
+      delegate = delegate._owner;
 
+    invariant(
+      delegate,
+      'ActiveState component must be owned by an ActiveDelegate'
+    );
+
+    return delegate;
   },
 
-  componentWillMount: function () {
-    ActiveStore.addChangeListener(this.handleActiveStateChange);
+  /**
+   * Returns true if the route with the given name, URL parameters, and
+   * query are all currently active.
+   */
+  isActive: function (routeName, params, query) {
+    return this.getActiveDelegate().isActive(routeName, params, query);
   },
 
   componentDidMount: function () {
-    if (this.updateActiveState)
-      this.updateActiveState();
+    this.getActiveDelegate().addActiveChangeListener(this.handleActiveStateChange);
+    this.handleActiveStateChange();
   },
 
   componentWillUnmount: function () {
-    ActiveStore.removeChangeListener(this.handleActiveStateChange);
+    this.getActiveDelegate().removeActiveChangeListener(this.handleActiveStateChange);
   },
 
   handleActiveStateChange: function () {
