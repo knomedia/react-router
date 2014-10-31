@@ -1,4 +1,4 @@
-var merge = require('react/lib/merge');
+var merge = require('../utils/merge');
 var Route = require('./Route');
 
 /**

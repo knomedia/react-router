@@ -1,6 +1,6 @@
 var React = require('react');
 var classSet = require('react/lib/cx');
-var merge = require('react/lib/merge');
+var merge = require('../utils/merge');
 var ActiveState = require('../mixins/ActiveState');
 var Navigation = require('../mixins/Navigation');
 
